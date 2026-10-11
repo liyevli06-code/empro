@@ -1,0 +1,646 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Dərs Jurnalı</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: a full-screen scroll-scrubbed opener (the supplied hero, doors that open onto the journal),
+   then a ledger: schedule board, per-lesson grade matrix (students x dates), student roster. */
+:root {
+  --bg: #edf0f3;
+  --surface: #ffffff;
+  --surface-2: #e2e8ee;
+  --fg: #0f1b2a;
+  --muted: #566678;
+  --line: #c9d2dc;
+  --accent: #0a6e6a;
+  --accent-fg: #ffffff;
+  --accent-soft: #d3ecea;
+  --good: #0e7a3f;
+  --good-bg: #ddf1e4;
+  --warn: #8a5a00;
+  --warn-bg: #f8ebcb;
+  --bad: #b3261e;
+  --bad-bg: #f9dcd9;
+  --hero-bg: #05070d;
+  --hero-fg: #f2f4f8;
+  --hero-line: rgba(255, 255, 255, 0.06);
+  --hero-glow: rgba(70, 201, 191, 0.28);
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a111b; --surface: #111b29; --surface-2: #182536; --fg: #e7edf4; --muted: #8fa1b5; --line: #243449;
+    --accent: #46c9bf; --accent-fg: #06201e; --accent-soft: #12332f;
+    --good: #5bd38a; --good-bg: #12301f; --warn: #e6b655; --warn-bg: #3a2c0e; --bad: #f2877f; --bad-bg: #3d1714;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a111b; --surface: #111b29; --surface-2: #182536; --fg: #e7edf4; --muted: #8fa1b5; --line: #243449;
+  --accent: #46c9bf; --accent-fg: #06201e; --accent-soft: #12332f;
+  --good: #5bd38a; --good-bg: #12301f; --warn: #e6b655; --warn-bg: #3a2c0e; --bad: #f2877f; --bad-bg: #3d1714;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Hero (scroll-scrubbed opener) ---------- */
+.hero { position: relative; height: 100dvh; width: 100%; overflow: hidden; background: var(--hero-bg); color: var(--hero-fg); touch-action: none; }
+.hero video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s ease; transform-origin: center; will-change: transform; pointer-events: none; touch-action: none; }
+.hero.has-video video { opacity: 1; }
+.hero .stage { position: absolute; inset: 0; background: radial-gradient(60% 55% at 50% 50%, var(--hero-glow), transparent 70%), var(--hero-bg); }
+.hero .door { position: absolute; top: 0; bottom: 0; width: 50.2%; will-change: transform;
+  background:
+    linear-gradient(var(--hero-line) 1px, transparent 1px) 0 0 / 100% 56px,
+    linear-gradient(90deg, var(--hero-line) 1px, transparent 1px) 0 0 / 56px 100%,
+    #090e17; }
+.hero .door.l { left: 0; border-right: 1px solid rgba(70, 201, 191, 0.35); }
+.hero .door.r { right: 0; border-left: 1px solid rgba(70, 201, 191, 0.35); }
+.hero .seam { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: linear-gradient(180deg, transparent, rgba(70, 201, 191, 0.9), transparent); box-shadow: 0 0 40px 6px rgba(70, 201, 191, 0.35); }
+.hero.has-video .stage, .hero.has-video .door, .hero.has-video .seam { display: none; }
+.hero .shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(5,7,13,.35), rgba(5,7,13,0) 30%, rgba(5,7,13,.15) 70%, rgba(5,7,13,.55)); }
+.hero .layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 0 6%; text-align: center; pointer-events: none; }
+.hero .eyebrow { font-family: var(--font-mono); font-size: clamp(11px, 1.5vw, 14px); letter-spacing: .28em; color: rgba(242,244,248,.7); }
+.hero h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(38px, 9vw, 120px); line-height: .95; letter-spacing: -0.025em; text-wrap: balance; text-shadow: 0 4px 30px rgba(0,0,0,.5); will-change: transform, filter, opacity; }
+.hero .tag { opacity: 0; }
+.hero .tag p { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(20px, 3.6vw, 42px); line-height: 1.2; letter-spacing: -0.01em; text-wrap: balance; text-shadow: 0 4px 24px rgba(0,0,0,.5); }
+.hero .hint { position: absolute; left: 50%; bottom: clamp(20px, 6vh, 48px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; color: rgba(240,244,248,.75); font-size: clamp(10px, 1.4vw, 12px); font-weight: 600; letter-spacing: .3em; transition: opacity .4s ease; pointer-events: none; }
+.hero .hint svg { animation: hero-bounce 1.6s ease-in-out infinite; }
+@keyframes hero-bounce { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(5px); opacity: 1; } }
+.hero .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.12); }
+.hero .progress div { height: 100%; width: 100%; background: linear-gradient(90deg, rgba(255,255,255,.5), rgba(255,255,255,.95)); transform: scaleX(0); transform-origin: left center; }
+.hero .skip { position: absolute; left: clamp(12px, 2.5vw, 24px); bottom: clamp(12px, 2.4vw, 20px); z-index: 3; background: transparent; border: 1px solid rgba(242,244,248,.35); color: rgba(242,244,248,.85); padding: 6px 12px; border-radius: 4px; font-size: 12px; letter-spacing: .04em; }
+.hero .skip:hover { border-color: rgba(242,244,248,.8); color: #fff; }
+.hero .sig { position: absolute; right: clamp(12px, 2.5vw, 24px); bottom: clamp(14px, 2.4vw, 22px); z-index: 2; font-size: clamp(11px, 1.4vw, 13px); color: rgba(220,224,232,.6); }
+.hero .sig a { color: inherit; text-decoration: none; transition: color .2s ease; }
+.hero .sig a:hover { color: var(--hero-fg); }
+.hero.calm { height: min(60dvh, 520px); touch-action: auto; }
+.hero.calm .door, .hero.calm .seam, .hero.calm .hint, .hero.calm .skip { display: none; }
+.hero.calm .tag { opacity: 1; justify-content: flex-end; padding-bottom: 12%; }
+
+/* ---------- Shell ---------- */
+.shell { max-width: 1120px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 32px); padding-block: 0 56px; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding-block: 12px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: -0.01em; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 7px 14px; font-weight: 500; color: var(--muted); }
+.tabs button:hover { color: var(--fg); background: var(--surface-2); }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-fg); }
+.panel { padding-top: 28px; display: flex; flex-direction: column; gap: 20px; }
+.panel h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -0.015em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 65ch; }
+
+/* ---------- Schedule ---------- */
+.days { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.day { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.day h3 { margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.lesson { text-align: left; display: flex; flex-direction: column; gap: 6px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+.lesson:hover { border-color: var(--accent); }
+.lesson .time { font-family: var(--font-mono); font-weight: 500; font-size: 13px; color: var(--accent); }
+.lesson .lname { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.lesson .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); }
+.lesson .count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.tag-t { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.tag-t.lec { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.alt { font-size: 12px; font-weight: 600; color: var(--warn); background: var(--warn-bg); padding: 1px 8px; border-radius: 99px; }
+
+/* ---------- Journal ---------- */
+.controls { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.field.grow { flex: 1 1 320px; }
+select, input[type="text"], input[type="date"] { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; min-width: 0; max-width: 100%; }
+.btn { background: var(--accent); color: var(--accent-fg); border: 1px solid transparent; border-radius: 6px; padding: 9px 16px; font-weight: 600; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+.btn.ghost:hover { background: var(--surface-2); filter: none; }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.btn.danger { background: var(--bad); color: #fff; }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--muted); font-size: 14px; }
+.info strong { color: var(--fg); font-weight: 600; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); text-align: center; }
+th:last-child, td:last-child { border-right: 0; }
+tbody tr:last-child td, tfoot td { border-bottom: 0; }
+thead th { background: var(--surface-2); font-family: var(--font-mono); font-weight: 500; font-size: 13px; padding: 8px 6px; white-space: nowrap; }
+thead th small { display: block; font-size: 11px; color: var(--muted); }
+.sticky { position: sticky; left: 0; z-index: 1; text-align: left; background: var(--surface); }
+thead .sticky { background: var(--surface-2); z-index: 2; }
+td.sticky, th.sticky { min-width: 150px; max-width: 220px; padding: 8px 12px; overflow-wrap: anywhere; font-weight: 500; }
+td.stat, th.stat { padding: 8px 10px; font-family: var(--font-mono); font-size: 14px; min-width: 56px; }
+tfoot td { background: var(--surface-2); font-family: var(--font-mono); font-size: 13px; padding: 8px 6px; color: var(--muted); }
+tfoot td.sticky { background: var(--surface-2); font-family: var(--font-body); font-weight: 600; color: var(--fg); }
+.cell { display: block; width: 100%; min-width: 60px; padding: 10px 6px; border: 0; background: transparent; text-align: center; font-family: var(--font-mono); font-weight: 500; font-size: 15px; border-radius: 0; color: inherit; }
+.cell:focus-visible { outline-offset: -2px; background: var(--surface-2); color: var(--fg); }
+td.b-good { background: var(--good-bg); color: var(--good); }
+td.b-warn { background: var(--warn-bg); color: var(--warn); }
+td.b-bad { background: var(--bad-bg); color: var(--bad); }
+td.b-abs { background: var(--surface-2); color: var(--muted); }
+.rm { background: none; border: 0; color: var(--muted); padding: 0 4px; font-size: 14px; line-height: 1; }
+.rm:hover { color: var(--bad); }
+.hintline { margin: 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+.empty { margin: 0; padding: 28px 16px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+/* ---------- Students ---------- */
+.addrow { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.addrow .field { flex: 1 1 260px; }
+.name-cell { text-align: left; padding: 10px 12px; font-weight: 500; overflow-wrap: anywhere; min-width: 140px; }
+.act { padding: 6px 10px; white-space: nowrap; text-align: right; }
+.confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+
+.foot { margin-top: 28px; font-size: 13px; color: var(--muted); }
+#toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; max-width: min(92vw, 520px); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 6px; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+@media (prefers-reduced-motion: reduce) {
+  .hero .hint svg { animation: none; }
+  .hero video, .hero .hint { transition: none; }
+}
+</style>
+
+<section class="hero" id="hero" aria-label="Giriş">
+  <video id="heroVideo" src="https://cdn.21st.dev/assets/mirror/21/21a77eac28eacbb7e142016eefeaa0b4a766619e51113629a3bc6df6af066c0f.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
+  <div class="stage" aria-hidden="true"></div>
+  <div class="door l" id="doorL" aria-hidden="true"></div>
+  <div class="door r" id="doorR" aria-hidden="true"></div>
+  <div class="seam" id="heroSeam" aria-hidden="true"></div>
+  <div class="shade"></div>
+  <div class="layer" id="heroTitle">
+    <div class="eyebrow">5 GÜN · 12 DƏRS</div>
+    <h1>DƏRS JURNALI</h1>
+  </div>
+  <div class="layer tag" id="heroTag"><p>Hər dərsin öz qiymət cədvəli var.</p></div>
+  <div class="hint" id="heroHint">
+    <span>AŞAĞI SÜRÜŞDÜR</span>
+    <svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><path d="M7 1 L7 17 M2 12 L7 17 L12 12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="heroBar"></div></div>
+  <button class="skip" id="skip" type="button">Jurnala keç</button>
+  <span class="sig">by <a href="https://www.guglielmogiannattasio.it" target="_blank" rel="noopener noreferrer">guglielmogiannattasio.exe</a></span>
+</section>
+
+<div class="shell" id="journal">
+  <header class="bar">
+    <div class="brand">Dərs Jurnalı</div>
+    <nav class="tabs" role="tablist" aria-label="Bölmələr">
+      <button type="button" role="tab" data-tab="schedule" aria-selected="true" id="tab-schedule">Cədvəl</button>
+      <button type="button" role="tab" data-tab="journal" aria-selected="false" id="tab-journal">Jurnal</button>
+      <button type="button" role="tab" data-tab="students" aria-selected="false" id="tab-students">Şagirdlər</button>
+    </nav>
+  </header>
+
+  <section class="panel" id="panel-schedule" role="tabpanel" aria-labelledby="tab-schedule">
+    <div>
+      <h2>Həftəlik cədvəl</h2>
+      <p class="sub">Dərsə toxunun, onun jurnalı açılsın. Hər dərsin qiymətləri ayrı saxlanılır.</p>
+    </div>
+    <div class="days" id="days"></div>
+  </section>
+
+  <section class="panel" id="panel-journal" role="tabpanel" aria-labelledby="tab-journal" hidden>
+    <div>
+      <h2>Dərs jurnalı</h2>
+      <p class="sub">Xanaya qiymət yazın (0–100) və ya qayıb üçün <b>q</b> yazın. Enter aşağıdakı şagirdə keçir. Xananı boşaltsanız qeyd silinir.</p>
+    </div>
+    <div class="controls">
+      <div class="field grow">
+        <label for="lessonSel">Dərs</label>
+        <select id="lessonSel"></select>
+      </div>
+      <div class="field">
+        <label for="pickDate">Tarix</label>
+        <input type="date" id="pickDate">
+      </div>
+      <button type="button" class="btn" id="addDate">Tarix əlavə et</button>
+    </div>
+    <div class="info" id="lessonInfo"></div>
+    <div class="scroll" id="matrix"></div>
+  </section>
+
+  <section class="panel" id="panel-students" role="tabpanel" aria-labelledby="tab-students" hidden>
+    <div>
+      <h2>Şagirdlər</h2>
+      <p class="sub">Əlavə etdiyiniz şagirdlər bütün dərslərin jurnalında görünür. Şagirdi silsəniz, onun bütün qiymətləri də silinir.</p>
+    </div>
+    <form class="addrow" id="addForm" autocomplete="off">
+      <div class="field">
+        <label for="stuName">Ad və soyad</label>
+        <input type="text" id="stuName" maxlength="80" placeholder="Məsələn: Aysel Məmmədova">
+      </div>
+      <button type="submit" class="btn">Şagird əlavə et</button>
+    </form>
+    <div class="scroll" id="roster"></div>
+  </section>
+
+  <p class="foot" id="modeNote"></p>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+
+  /* ================= Scroll-locked hero ================= */
+  var hero = $('#hero'), video = $('#heroVideo'), titleEl = $('#heroTitle'), tagEl = $('#heroTag'),
+      hintEl = $('#heroHint'), barEl = $('#heroBar'), doorL = $('#doorL'), doorR = $('#doorR'),
+      seam = $('#heroSeam'), skipBtn = $('#skip');
+  var SCRUB = 3200;
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var duration = 0, target = 0, cur = 0, started = false, seeking = false, pending = null, lastT = -1,
+      locked = false, lockedY = 0, touchY = 0, reachedAt = 0;
+
+  video.addEventListener('loadeddata', function () {
+    duration = video.duration || 0;
+    hero.classList.add('has-video');
+    if (reduce) video.currentTime = duration * 0.92;
+  });
+  video.addEventListener('seeked', function () {
+    seeking = false;
+    if (pending !== null) { var t = pending; pending = null; seeking = true; video.currentTime = t; }
+  });
+  function seekTo(t) {
+    if (Math.abs(t - lastT) < 0.01) return;
+    lastT = t;
+    if (seeking) { pending = t; return; }
+    seeking = true; video.currentTime = t;
+  }
+  // iOS Safari will not buffer a seek-only video until it has played once.
+  try {
+    var pr = video.play();
+    if (pr && pr.then) pr.then(function () { video.pause(); }).catch(function () {}); else video.pause();
+  } catch (e) {}
+
+  function engageLock() {
+    if (locked) return;
+    locked = true; lockedY = window.scrollY;
+    var b = document.body.style;
+    b.position = 'fixed'; b.top = '-' + lockedY + 'px'; b.left = '0'; b.right = '0';
+    b.width = '100%'; b.height = '100%'; b.overscrollBehavior = 'none';
+  }
+  function releaseLock() {
+    if (!locked) return;
+    locked = false;
+    var y = lockedY, b = document.body.style;
+    b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.width = ''; b.height = ''; b.overscrollBehavior = '';
+    window.scrollTo(0, y);
+  }
+  function settled() { return reachedAt && (performance.now() - reachedAt) > 350; }
+  function addDelta(d) {
+    target = clamp(target + d / SCRUB, 0, 1);
+    if (target > 0.001) started = true;
+    if (target >= 1) { if (!reachedAt) reachedAt = performance.now(); } else reachedAt = 0;
+  }
+  function goJournal() {
+    setTimeout(function () { $('#journal').scrollIntoView({ behavior: 'smooth' }); }, 30);
+  }
+  // Returns true when the input was consumed by the hero.
+  function handleInput(d) {
+    if (!locked) {
+      if (d < 0 && window.scrollY <= 0) { engageLock(); reachedAt = 0; } else return false;
+    }
+    if (target >= 1 && d > 0 && settled()) { releaseLock(); goJournal(); return false; }
+    addDelta(d);
+    return true;
+  }
+
+  if (reduce) {
+    hero.classList.add('calm');
+  } else {
+    engageLock();
+    window.addEventListener('wheel', function (e) { if (handleInput(e.deltaY)) e.preventDefault(); }, { passive: false });
+    window.addEventListener('touchstart', function (e) { touchY = e.touches[0] ? e.touches[0].clientY : 0; }, { passive: true });
+    var onTM = function (e) {
+      var y = e.touches[0] ? e.touches[0].clientY : touchY;
+      var d = touchY - y; touchY = y;
+      if (d === 0) return;
+      if (handleInput(d)) e.preventDefault();
+    };
+    window.addEventListener('touchmove', onTM, { passive: false });
+    hero.addEventListener('touchmove', onTM, { passive: false, capture: true });
+    window.addEventListener('keydown', function (e) {
+      if (!locked) return;
+      var tg = e.target, tn = tg && tg.tagName;
+      if (tn === 'INPUT' || tn === 'SELECT' || tn === 'TEXTAREA') return;
+      if (tn === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+      var m = { ArrowDown: 300, PageDown: 900, ' ': 900, End: 9999, ArrowUp: -300, PageUp: -900, Home: -9999 };
+      if (!(e.key in m)) return;
+      e.preventDefault();
+      handleInput(m[e.key]);
+    });
+    skipBtn.addEventListener('click', function () {
+      if (locked) { target = 1; cur = 1; releaseLock(); }
+      goJournal();
+    });
+    var frame = function () {
+      cur += (target - cur) * 0.18;
+      if (Math.abs(target - cur) < 0.0005) cur = target;
+      var p = cur;
+      if (duration > 0) seekTo(p * duration);
+      video.style.transform = 'scale(' + (1 + p * 0.06) + ')';
+      var t = 1 - clamp(p / 0.35, 0, 1);
+      titleEl.style.opacity = String(t);
+      titleEl.style.transform = 'translateY(' + ((1 - t) * -24) + 'px) scale(' + (0.96 + t * 0.04) + ')';
+      titleEl.style.filter = 'blur(' + ((1 - t) * 10) + 'px)';
+      var open = clamp(p / 0.85, 0, 1), e3 = 1 - Math.pow(1 - open, 3);
+      doorL.style.transform = 'translateX(' + (-e3 * 101) + '%)';
+      doorR.style.transform = 'translateX(' + (e3 * 101) + '%)';
+      seam.style.opacity = String(1 - clamp(open * 1.6, 0, 1));
+      hintEl.style.opacity = started ? '0' : '1';
+      var g = clamp((p - 0.82) / 0.18, 0, 1);
+      tagEl.style.opacity = String(g);
+      tagEl.style.transform = 'translateY(' + ((1 - g) * 20) + 'px) scale(' + (0.97 + g * 0.03) + ')';
+      tagEl.style.filter = 'blur(' + ((1 - g) * 8) + 'px)';
+      barEl.style.transform = 'scaleX(' + p + ')';
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+
+  /* ================= Data ================= */
+  var LESSONS = [
+    { id: 'g1s1', day: 1, time: '13:25', name: 'Kiberəməliyyatlar və kibertəhdidlərə qarşı mübarizə', type: 'Mühazirə', room: '102' },
+    { id: 'g1s2', day: 1, time: '14:55', name: 'Python proqramlaşdırma', type: 'Mühazirə', room: '707' },
+    { id: 'g2s1', day: 2, time: '13:25', name: 'İşgüzar texniki ingilis dili', type: 'Məşğələ', room: '106' },
+    { id: 'g2s2', day: 2, time: '14:55', name: 'Əməliyyat sistemləri', type: 'Mühazirə', room: '106' },
+    { id: 'g3s1', day: 3, time: '11:35', name: 'Diskret riyaziyyat', type: 'Məşğələ', room: '607' },
+    { id: 'g3s2', day: 3, time: '13:25', name: 'Python proqramlaşdırma', type: 'Məşğələ', room: '102' },
+    { id: 'g4s1', day: 4, time: '13:25', name: 'Əməliyyat sistemləri', type: 'Məşğələ', room: '106' },
+    { id: 'g4s2', day: 4, time: '14:55', name: 'Diskret riyaziyyat', type: 'Məşğələ', room: '706' },
+    { id: 'g4s3', day: 4, time: '16:25', name: 'Şəbəkələrin təhlükəsizliyi', type: 'Mühazirə', room: '102' },
+    { id: 'g5s1', day: 5, time: '13:25', name: 'İşgüzar texniki ingilis dili', type: 'Məşğələ', room: '313', alt: true },
+    { id: 'g5s2', day: 5, time: '14:55', name: 'Kiberəməliyyatlar və kibertəhdidlərə qarşı mübarizə', type: 'Mühazirə', room: '107' },
+    { id: 'g5s3', day: 5, time: '16:25', name: 'Şəbəkələrin təhlükəsizliyi', type: 'Məşğələ', room: '102' }
+  ];
+  var KEY = 'ders-jurnali-v1';
+  var S = { tab: 'schedule', lesson: LESSONS[0].id, students: [], grades: new Map(), extra: {}, mode: 'loading', confirmDel: null, deferred: false };
+  var dbRef = null;
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function fmtDate(d) { return d.slice(8, 10) + '.' + d.slice(5, 7); }
+  function lessonById(id) { return LESSONS.filter(function (l) { return l.id === id; })[0]; }
+  function gid(cid, sid, date) { return cid + '_' + sid + '_' + date; }
+  function uid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function sortedStudents() { return S.students.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'az'); }); }
+  function band(g) { if (g.absent) return 'abs'; return g.score >= 71 ? 'good' : g.score >= 51 ? 'warn' : 'bad'; }
+  function avg(nums) { if (!nums.length) return '–'; var s = 0; nums.forEach(function (n) { s += n; }); return String(Math.round(s / nums.length * 10) / 10); }
+  function gradesOf(fn) { var out = []; S.grades.forEach(function (g) { if (fn(g)) out.push(g); }); return out; }
+
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 4500);
+  }
+
+  /* ---- storage: shared database when available, otherwise this browser ---- */
+  function persistLocal() {
+    try { localStorage.setItem(KEY, JSON.stringify({ students: S.students, grades: gradesOf(function () { return true; }) })); } catch (e) {}
+  }
+  function loadLocal() {
+    try {
+      var j = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (j) { S.students = j.students || []; (j.grades || []).forEach(function (g) { S.grades.set(g.id, g); }); }
+    } catch (e) {}
+  }
+  function fail() { toast('Yadda saxlamaq alınmadı. Bu səhifədə dəyişiklik etmək icazəniz olmaya bilər.'); }
+
+  function addStudent(name) {
+    if (dbRef) return dbRef.collection('students').add({ name: name, created: Date.now() }).catch(fail);
+    S.students.push({ id: uid(), name: name, created: Date.now() }); persistLocal(); render(); return Promise.resolve();
+  }
+  function removeStudent(id) {
+    var gs = gradesOf(function (g) { return g.sid === id; });
+    if (dbRef) {
+      var chain = Promise.resolve();
+      gs.forEach(function (g) { chain = chain.then(function () { return dbRef.doc('grades/' + g.id).delete(); }); });
+      return chain.then(function () { return dbRef.doc('students/' + id).delete(); }).catch(fail);
+    }
+    gs.forEach(function (g) { S.grades.delete(g.id); });
+    S.students = S.students.filter(function (s) { return s.id !== id; });
+    persistLocal(); render(); return Promise.resolve();
+  }
+  function putGrade(g) {
+    var body = { cid: g.cid, sid: g.sid, date: g.date, score: g.score, absent: g.absent };
+    if (dbRef) return dbRef.doc('grades/' + g.id).set(body).catch(fail);
+    S.grades.set(g.id, Object.assign({ id: g.id }, body)); persistLocal(); render(); return Promise.resolve();
+  }
+  function dropGrade(id) {
+    if (dbRef) return dbRef.doc('grades/' + id).delete().catch(fail);
+    S.grades.delete(id); persistLocal(); render(); return Promise.resolve();
+  }
+
+  /* ================= Rendering ================= */
+  function renderSchedule() {
+    var html = '';
+    for (var d = 1; d <= 5; d++) {
+      html += '<section class="day"><h3>' + d + '-ci gün</h3>';
+      LESSONS.filter(function (l) { return l.day === d; }).forEach(function (l) {
+        var n = gradesOf(function (g) { return g.cid === l.id; }).length;
+        html += '<button type="button" class="lesson" data-open="' + l.id + '">' +
+          '<span class="time">' + l.time + '</span>' +
+          '<span class="lname">' + esc(l.name) + '</span>' +
+          '<span class="meta"><span class="tag-t ' + (l.type === 'Mühazirə' ? 'lec' : '') + '">' + l.type + '</span><span>otaq ' + l.room + '</span>' +
+          (l.alt ? '<span class="alt">alt həftə</span>' : '') + '</span>' +
+          '<span class="count">' + (n ? n + ' qeyd' : 'qeyd yoxdur') + '</span></button>';
+      });
+      html += '</section>';
+    }
+    $('#days').innerHTML = html;
+  }
+
+  function datesFor(cid) {
+    var set = {};
+    gradesOf(function (g) { return g.cid === cid; }).forEach(function (g) { set[g.date] = 1; });
+    if (S.extra[cid]) S.extra[cid].forEach(function (d) { set[d] = 1; });
+    return Object.keys(set).sort();
+  }
+
+  function renderMatrix() {
+    var a = document.activeElement;
+    if (a && a.classList && a.classList.contains('cell') && a.value !== a.dataset.orig) { S.deferred = true; return; }
+    S.deferred = false;
+    var keep = a && a.classList && a.classList.contains('cell') ? { sid: a.dataset.sid, date: a.dataset.date } : null;
+    var L = lessonById(S.lesson), box = $('#matrix');
+    $('#lessonInfo').innerHTML = '<strong>' + esc(L.name) + '</strong><span>' + L.type + ' · otaq ' + L.room + '</span><span>' + L.day + '-ci gün, ' + L.time + (L.alt ? ' (alt həftə)' : '') + '</span>';
+    if (S.mode === 'loading') { box.innerHTML = '<p class="empty">Yüklənir…</p>'; return; }
+    var st = sortedStudents();
+    if (!st.length) {
+      box.innerHTML = '<p class="empty">Hələ şagird əlavə edilməyib.<button type="button" class="btn" data-go="students">Şagird əlavə et</button></p>';
+      return;
+    }
+    var dates = datesFor(S.lesson);
+    var head = '<th class="sticky">Şagird</th>';
+    dates.forEach(function (d) {
+      var has = gradesOf(function (g) { return g.cid === S.lesson && g.date === d; }).length > 0;
+      head += '<th>' + fmtDate(d) + '<small>' + d.slice(0, 4) + (has ? '' : ' <button type="button" class="rm" data-rmdate="' + d + '" aria-label="' + fmtDate(d) + ' tarixini sil">×</button>') + '</small></th>';
+    });
+    head += '<th class="stat">Orta</th><th class="stat">Q</th>';
+    var rows = '';
+    st.forEach(function (s) {
+      var tds = '', nums = [], abs = 0;
+      dates.forEach(function (d) {
+        var g = S.grades.get(gid(S.lesson, s.id, d)), val = '', cls = '';
+        if (g) { val = g.absent ? 'q' : String(g.score); cls = ' b-' + band(g); if (g.absent) abs++; else nums.push(g.score); }
+        tds += '<td class="' + cls.trim() + '"><input class="cell" type="text" inputmode="decimal" autocomplete="off" value="' + esc(val) + '" data-orig="' + esc(val) + '" data-sid="' + esc(s.id) + '" data-date="' + d + '" aria-label="' + esc(s.name) + ', ' + fmtDate(d) + '"></td>';
+      });
+      rows += '<tr><td class="sticky">' + esc(s.name) + '</td>' + tds + '<td class="stat">' + avg(nums) + '</td><td class="stat">' + (abs || '–') + '</td></tr>';
+    });
+    var foot = '<td class="sticky">Sinif ortası</td>';
+    dates.forEach(function (d) {
+      var nums = gradesOf(function (g) { return g.cid === S.lesson && g.date === d && !g.absent; }).map(function (g) { return g.score; });
+      foot += '<td>' + avg(nums) + '</td>';
+    });
+    var all = gradesOf(function (g) { return g.cid === S.lesson && !g.absent; }).map(function (g) { return g.score; });
+    foot += '<td>' + avg(all) + '</td><td>' + (gradesOf(function (g) { return g.cid === S.lesson && g.absent; }).length || '–') + '</td>';
+    var note = dates.length ? '' : '<p class="empty">Bu dərs üçün hələ tarix yoxdur. Yuxarıdan tarix seçib “Tarix əlavə et” düyməsinə basın.</p>';
+    box.innerHTML = '<table><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody><tfoot><tr>' + foot + '</tr></tfoot></table>' + note;
+    if (keep) {
+      var cells = box.querySelectorAll('.cell');
+      for (var i = 0; i < cells.length; i++) {
+        if (cells[i].dataset.sid === keep.sid && cells[i].dataset.date === keep.date) { cells[i].focus(); break; }
+      }
+    }
+  }
+
+  function renderRoster() {
+    var box = $('#roster');
+    if (S.mode === 'loading') { box.innerHTML = '<p class="empty">Yüklənir…</p>'; return; }
+    var st = sortedStudents();
+    if (!st.length) { box.innerHTML = '<p class="empty">Siyahı boşdur. Yuxarıdakı xanaya ilk şagirdin adını yazın.</p>'; return; }
+    var rows = '';
+    st.forEach(function (s) {
+      var mine = gradesOf(function (g) { return g.sid === s.id; });
+      var nums = mine.filter(function (g) { return !g.absent; }).map(function (g) { return g.score; });
+      var abs = mine.length - nums.length;
+      var act = S.confirmDel === s.id
+        ? '<span class="confirm">Silinsin?<button type="button" class="btn small danger" data-del-yes="' + esc(s.id) + '">Bəli</button><button type="button" class="btn small ghost" data-del-no="1">Ləğv et</button></span>'
+        : '<button type="button" class="btn small ghost" data-del="' + esc(s.id) + '">Sil</button>';
+      rows += '<tr><td class="name-cell">' + esc(s.name) + '</td><td class="stat">' + nums.length + '</td><td class="stat">' + avg(nums) + '</td><td class="stat">' + (abs || '–') + '</td><td class="act">' + act + '</td></tr>';
+    });
+    box.innerHTML = '<table><thead><tr><th class="sticky">Şagird</th><th class="stat">Qiymət</th><th class="stat">Orta</th><th class="stat">Q</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function renderMode() {
+    $('#tab-students').textContent = 'Şagirdlər' + (S.students.length ? ' (' + S.students.length + ')' : '');
+    $('#modeNote').textContent = S.mode === 'db'
+      ? 'Qeydlər bu səhifənin bazasında saxlanılır və yenidən açanda yerindədir.'
+      : S.mode === 'local' ? 'Daxil olmadığınız üçün qeydlər yalnız bu brauzerdə saxlanılır.' : '';
+  }
+
+  function render() { renderSchedule(); renderMatrix(); renderRoster(); renderMode(); }
+
+  /* ================= Interaction ================= */
+  function setTab(t) {
+    S.tab = t;
+    ['schedule', 'journal', 'students'].forEach(function (n) {
+      $('#panel-' + n).hidden = n !== t;
+      $('#tab-' + n).setAttribute('aria-selected', n === t ? 'true' : 'false');
+    });
+  }
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab);
+  });
+  function openLesson(id) {
+    S.lesson = id; $('#lessonSel').value = id; setTab('journal'); renderMatrix();
+    $('#journal').scrollIntoView({ behavior: 'smooth' });
+  }
+  $('#days').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-open]'); if (b) openLesson(b.dataset.open);
+  });
+
+  // lesson picker
+  (function () {
+    var html = '';
+    for (var d = 1; d <= 5; d++) {
+      html += '<optgroup label="' + d + '-ci gün">';
+      LESSONS.filter(function (l) { return l.day === d; }).forEach(function (l) {
+        html += '<option value="' + l.id + '">' + l.time + ' · ' + esc(l.name) + ' (' + l.type.toLowerCase() + '-' + l.room + ')' + (l.alt ? ' · alt həftə' : '') + '</option>';
+      });
+      html += '</optgroup>';
+    }
+    $('#lessonSel').innerHTML = html;
+    $('#lessonSel').value = S.lesson;
+    $('#pickDate').value = today();
+  })();
+  $('#lessonSel').addEventListener('change', function (e) { S.lesson = e.target.value; renderMatrix(); });
+
+  $('#addDate').addEventListener('click', function () {
+    var v = $('#pickDate').value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { toast('Əvvəlcə tarix seçin.'); return; }
+    (S.extra[S.lesson] = S.extra[S.lesson] || new Set()).add(v);
+    renderMatrix();
+    var cells = document.querySelectorAll('#matrix .cell');
+    for (var i = 0; i < cells.length; i++) { if (cells[i].dataset.date === v) { cells[i].focus(); break; } }
+    var sc = $('#matrix'); sc.scrollLeft = sc.scrollWidth;
+  });
+
+  var matrix = $('#matrix');
+  matrix.addEventListener('focusin', function (e) { if (e.target.classList.contains('cell')) e.target.select(); });
+  matrix.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.target.classList.contains('cell')) return;
+    e.preventDefault();
+    var date = e.target.dataset.date, cells = [].slice.call(matrix.querySelectorAll('.cell')).filter(function (c) { return c.dataset.date === date; });
+    var i = cells.indexOf(e.target);
+    if (cells[i + 1]) cells[i + 1].focus(); else e.target.blur();
+  });
+  matrix.addEventListener('change', function (e) {
+    var inp = e.target; if (!inp.classList.contains('cell')) return;
+    var raw = inp.value.trim().replace(',', '.'), sid = inp.dataset.sid, date = inp.dataset.date, id = gid(S.lesson, sid, date);
+    if (raw === '') { inp.dataset.orig = ''; dropGrade(id); return; }
+    if (/^q$/i.test(raw)) { inp.value = 'q'; inp.dataset.orig = 'q'; putGrade({ id: id, cid: S.lesson, sid: sid, date: date, score: null, absent: true }); return; }
+    var n = Number(raw);
+    if (!isFinite(n) || n < 0 || n > 100) { toast('0 ilə 100 arasında rəqəm və ya qayıb üçün q yazın.'); inp.value = inp.dataset.orig; return; }
+    n = Math.round(n * 10) / 10;
+    inp.value = String(n); inp.dataset.orig = String(n);
+    putGrade({ id: id, cid: S.lesson, sid: sid, date: date, score: n, absent: false });
+  });
+  matrix.addEventListener('focusout', function () { if (S.deferred) setTimeout(renderMatrix, 0); });
+  matrix.addEventListener('click', function (e) {
+    var r = e.target.closest('[data-rmdate]');
+    if (r && S.extra[S.lesson]) { S.extra[S.lesson].delete(r.dataset.rmdate); renderMatrix(); return; }
+    if (e.target.closest('[data-go]')) { setTab('students'); $('#stuName').focus(); }
+  });
+
+  $('#addForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var inp = $('#stuName'), name = inp.value.trim().replace(/\s+/g, ' ');
+    if (!name) { toast('Şagirdin adını yazın.'); return; }
+    var dup = S.students.some(function (s) { return String(s.name).toLowerCase() === name.toLowerCase(); });
+    if (dup) { toast('Bu adda şagird artıq var.'); return; }
+    inp.value = ''; addStudent(name); inp.focus();
+  });
+  $('#roster').addEventListener('click', function (e) {
+    var t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.del) { S.confirmDel = t.dataset.del; renderRoster(); }
+    else if (t.dataset.delNo) { S.confirmDel = null; renderRoster(); }
+    else if (t.dataset.delYes) { var id = t.dataset.delYes; S.confirmDel = null; removeStudent(id); }
+  });
+
+  /* ================= Start ================= */
+  function subscribe() {
+    dbRef.collection('students').onSnapshot(function (snap) {
+      S.students = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      S.mode = 'db'; render();
+    }, function () { toast('Bazaya qoşulmaq alınmadı. Səhifəni yeniləyin.'); });
+    dbRef.collection('grades').onSnapshot(function (snap) {
+      var m = new Map();
+      snap.docs.forEach(function (d) { m.set(d.id, Object.assign({ id: d.id }, d.data())); });
+      S.grades = m; S.mode = 'db'; render();
+    }, function () { toast('Qiymətləri yükləmək alınmadı. Səhifəni yeniləyin.'); });
+  }
+  setTab('schedule');
+  render();
+  (async function () {
+    var db = null;
+    try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+    if (db) { dbRef = db; subscribe(); } else { S.mode = 'local'; loadLocal(); render(); }
+  })();
+})();
+</script>
+
+</body></html>
